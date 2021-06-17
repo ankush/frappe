@@ -20,7 +20,10 @@ PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError
 
 
 def get_pdf(html, options=None, output=None):
+	print("------------- get_pdf html ----------------")
+	print(html)
 	html = scrub_urls(html)
+	print(html)
 	html, options = prepare_options(html, options)
 
 	options.update({
@@ -41,6 +44,7 @@ def get_pdf(html, options=None, output=None):
 		reader = PdfFileReader(io.BytesIO(filedata))
 	except OSError as e:
 		if any([error in str(e) for error in PDF_CONTENT_ERRORS]):
+			print("PDF error: ", str(e))
 			if not filedata:
 				print(html, options)
 				frappe.throw(_("PDF generation failed because of broken image links"))
