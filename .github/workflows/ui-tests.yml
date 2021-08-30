@@ -21,6 +21,8 @@ jobs:
 
     name: UI Tests (Cypress)
 
+
+
     services:
       mysql:
         image: mariadb:10.3
