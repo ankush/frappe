@@ -419,6 +419,7 @@ class Database(object):
 			# return last login of **User** `test@example.com`
 			user = frappe.db.get_values("User", "test@example.com", "*")[0]
 		"""
+
 		out = None
 		if cache and isinstance(filters, str) and \
 			(doctype, filters, fieldname) in self.value_cache:
@@ -446,8 +447,7 @@ class Database(object):
 						out = None
 					elif (not ignore) and frappe.db.is_table_missing(e):
 						# table not found, look in singles
-						out = self.get_values_from_single(fields, filters, doctype, as_dict, debug, update)
-
+						raise
 					else:
 						raise
 			else:
@@ -628,6 +628,7 @@ class Database(object):
 		:param debug: Print the query in the developer / js console.
 		:param for_update: Will add a row-level lock to the value that is being set so that it can be released on commit.
 		"""
+
 		if not modified:
 			modified = now()
 		if not modified_by:
