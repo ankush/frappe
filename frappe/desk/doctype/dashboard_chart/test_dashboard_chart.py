@@ -2,7 +2,7 @@
 # Copyright (c) 2019, Frappe Technologies and Contributors
 # License: MIT. See LICENSE
 import unittest, frappe
-from frappe.utils import getdate, formatdate, get_last_day
+from frappe.utils import getdate, formatdate, get_last_day, D
 from frappe.utils.dateutils import get_period_ending, get_period
 from frappe.desk.doctype.dashboard_chart.dashboard_chart import get
 
@@ -233,7 +233,7 @@ class TestDashboardChart(unittest.TestCase):
 
 		result = get(chart_name='Test Average Dashboard Chart', refresh = 1)
 
-		self.assertEqual(result.get('datasets')[0].get('values'), [50.0, 150.0, 266.6666666666667, 0.0])
+		self.assertEqual(result.get('datasets')[0].get('values'), [50.0, 150.0, D('800') / D('3'), 0.0])
 		self.assertEqual(
 			result.get('labels'),
 			['30-12-18', '06-01-19', '13-01-19', '20-01-19']
