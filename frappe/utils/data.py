@@ -1,7 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
-from typing import Optional
+from typing import Optional, Union
 import frappe
 import operator
 import json
@@ -11,10 +11,13 @@ from code import compile_command
 from urllib.parse import quote, urljoin
 from frappe.desk.utils import slug
 from click import secho
+from decimal import Decimal
 
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%H:%M:%S.%f"
 DATETIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT
+
+NumTypes = Union[int, float, Decimal]
 
 
 def is_invalid_date_string(date_string):
@@ -601,6 +604,110 @@ def cast(fieldtype, value=None):
 		value = get_timedelta(value)
 
 	return value
+
+class D(Decimal):
+	"""A float-tolerant wrapper around Decimal data type."""
+
+	@staticmethod
+	def to_decimal(num: NumTypes) -> 'D':
+		""" Convert numeric types and string to decimal; tries to avoid
+		floating point errors when possible."""
+		if isinstance(num, float):
+			# string is closer to human representation than `repr` which is
+			# actual machine level representation. This is not supposed to
+			# work 100% of the time but it makes class tolerant to float for
+			# progressive refactors.
+			num = D(str(num))
+		return num
+
+	@classmethod
+	def from_float(cls, __f: float) -> "D":
+		return cls.to_decimal(__f)
+
+	def __eq__(self, other) -> bool:
+		return super().__eq__(self.to_decimal(other))
+
+	def __add__(self, other) -> "D":
+		return D(super().__add__(self.to_decimal(other)))
+
+	def __radd__(self, other) -> "D":
+		return D(super().__radd__(self.to_decimal(other)))
+
+	def __sub__(self, other) -> "D":
+		return D(super().__sub__(self.to_decimal(other)))
+
+	def __rsub__(self, other) -> "D":
+		return D(super().__rsub__(self.to_decimal(other)))
+
+	def __mul__(self, other) -> "D":
+		return D(super().__mul__(self.to_decimal(other)))
+
+	def __rmul__(self, other) -> "D":
+		return D(super().__rmul__(self.to_decimal(other)))
+
+	def compare(self, other, context=None) -> "D":
+		return D(super().compare(self.to_decimal(other), context=context))
+
+	def __ge__(self, other) -> bool:
+		return super().__ge__(self.to_decimal(other))
+
+	def __gt__(self, other) -> bool:
+		return super().__gt__(self.to_decimal(other))
+
+	def __le__(self, other) -> bool:
+		return super().__le__(self.to_decimal(other))
+
+	def __lt__(self, other) -> bool:
+		return super().__lt__(self.to_decimal(other))
+
+	def __truediv__(self, other) -> "D":
+		return D(super().__truediv__(self.to_decimal(other)))
+
+	def __rtruediv__(self, other) -> "D":
+		return D(super().__rtruediv__(self.to_decimal(other)))
+
+	def __mod__(self, other) -> "D":
+		return D(super().__mod__(self.to_decimal(other)))
+
+	def __rmod__(self, other) -> "D":
+		return D(super().__rmod__(self.to_decimal(other)))
+
+	def __floordiv__(self, other) -> "D":
+		return D(super().__floordiv__(self.to_decimal(other)))
+
+	def __rfloordiv__(self, other) -> "D":
+		return D(super().__rfloordiv__(self.to_decimal(other)))
+
+	def __divmod__(self, other):
+		return super().__divmod__(self.to_decimal(other))
+
+	def __rdivmod__(self, other):
+		return super().__rdivmod__(self.to_decimal(other))
+
+	def __pow__(self, other, modulo=None) -> "D":
+		return D(super().__pow__(self.to_decimal(other), self.to_decimal(modulo)))
+
+	def __rpow__(self, other, modulo=None) -> "D":
+		return D(super().__rpow__(self.to_decimal(other), self.to_decimal(modulo)))
+
+	def __round__(self, ndigits = None) -> "D":
+		return D(super().__round__(ndigits))
+
+	def __abs__(self) -> "D":
+		return D(super().__abs__())
+
+	def __neg__(self) -> "D":
+		return D(super().__neg__())
+
+	def __pos__(self) -> "D":
+		return D(super().__pos__())
+
+	def __copy__(self) -> "D":
+		return D(super().__copy__())
+
+	def __deepcopy__(self) -> "D":
+		return D(super().__deepcopy__())
+
 
 def flt(s, precision=None):
 	"""Convert to float (ignoring commas in string)
