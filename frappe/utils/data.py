@@ -733,13 +733,13 @@ def flt(s, precision=None):
 		s = s.replace(',','')
 
 	try:
-		num = float(s)
+		if not isinstance(s, (float, Decimal)):
+			s = float(s)
 		if precision is not None:
-			num = rounded(num, precision)
+			s = rounded(s, precision)
 	except Exception:
-		num = 0.0
-
-	return num
+		s = 0.0
+	return s
 
 def cint(s, default=0):
 	"""Convert to integer
@@ -825,8 +825,12 @@ def sbool(x):
 def rounded(num, precision=0):
 	"""round method for round halfs to nearest even algorithm aka banker's rounding - compatible with python3"""
 	precision = cint(precision)
-	multiplier = 10 ** precision
 
+	# decimal types already implement banker's rounding
+	if isinstance(num, Decimal):
+		return round(num, precision)
+
+	multiplier = 10 ** precision
 	# avoid rounding errors
 	num = round(num * multiplier if precision else num, 8)
 
