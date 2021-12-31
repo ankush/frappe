@@ -7,7 +7,7 @@ from pymysql.converters import conversions, escape_string
 import frappe
 from frappe.database.database import Database
 from frappe.database.mariadb.schema import MariaDBTable
-from frappe.utils import UnicodeWithAttrs, cstr, get_datetime, get_table_name
+from frappe.utils import UnicodeWithAttrs, cstr, get_datetime, get_table_name, D
 
 
 class MariaDBDatabase(Database):
@@ -66,7 +66,7 @@ class MariaDBDatabase(Database):
 			}
 
 		conversions.update({
-			FIELD_TYPE.NEWDECIMAL: float,
+			FIELD_TYPE.NEWDECIMAL: D,
 			FIELD_TYPE.DATETIME: get_datetime,
 			UnicodeWithAttrs: conversions[str]
 		})
