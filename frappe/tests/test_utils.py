@@ -13,6 +13,8 @@ from mimetypes import guess_type
 from unittest.mock import patch
 
 import pytz
+from hypothesis import given
+from hypothesis import strategies as st
 from PIL import Image
 
 import frappe
@@ -25,6 +27,7 @@ from frappe.utils import (
 	evaluate_filters,
 	execute_in_shell,
 	floor,
+	flt,
 	format_timedelta,
 	get_bench_path,
 	get_file_timestamp,
@@ -463,6 +466,7 @@ class TestDiffUtils(FrappeTestCase):
 		latest_version = self.versions[0][0]
 
 		diff = get_version_diff(old_version, latest_version)
+
 		self.assertIn("-2;", diff)
 		self.assertIn("+42;", diff)
 
@@ -944,3 +948,41 @@ class TestTypingValidations(FrappeTestCase):
 
 		report.toggle_disable(changed_value)
 		report.toggle_disable(current_value)
+
+
+class TestRounding(FrappeTestCase):
+	def test_bankers_rounding(self):
+		self.assertEqual(flt("what"), 0)
+
+		self.assertEqual(flt("0.5", 0), 0)
+		self.assertEqual(flt("0.3"), 0.3)
+
+		self.assertEqual(flt("1.5", 0), 2)
+
+		# positive rounding to integers
+		self.assertEqual(flt(0.4, 0), 0)
+		self.assertEqual(flt(0.5, 0), 0)
+		self.assertEqual(flt(1.455, 0), 1)
+		self.assertEqual(flt(1.5, 0), 2)
+
+		# negative rounding to integers
+		self.assertEqual(flt(-0.5, 0), 0)
+		self.assertEqual(flt(-1.5, 0), -2)
+
+		# negative precision i.e. round to nearest 10th
+		self.assertEqual(flt(123, -1), 120)
+		self.assertEqual(flt(125, -1), 120)
+		self.assertEqual(flt(134.45, -1), 130)
+		self.assertEqual(flt(135, -1), 140)
+
+		# # positive multiple digit rounding
+		self.assertEqual(flt(1.25, 1), 1.2)
+		self.assertEqual(flt(0.15, 1), 0.2)
+
+		# # negative multiple digit rounding
+		self.assertEqual(flt(-1.25, 1), -1.2)
+		self.assertEqual(flt(-0.15, 1), -0.2)
+
+	@given(st.decimals(min_value=-1e9, max_value=1e9), st.integers(min_value=-3, max_value=4))
+	def test_rounding_correctness(self, number, precision):
+		self.assertEqual(Decimal(str(flt(float(number), precision))), round(number, precision))
