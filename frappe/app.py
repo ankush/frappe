@@ -271,9 +271,8 @@ def handle_exception(e):
 
 def after_request(rollback):
 	if (frappe.local.request.method in ("POST", "PUT") or frappe.local.flags.commit) and frappe.db:
-		if frappe.db.transaction_writes:
-			frappe.db.commit()
-			rollback = False
+		frappe.db.commit()
+		rollback = False
 
 	# update session
 	if getattr(frappe.local, "session_obj", None):
