@@ -194,7 +194,10 @@ class Database(object):
 				raise frappe.QueryTimeoutError(e)
 
 			elif frappe.conf.db_type == "postgres":
+				import traceback
 				# TODO: added temporarily
+				print(">>> Postgres DB exception")
+				traceback.print_stack()
 				print(e)
 				raise
 
