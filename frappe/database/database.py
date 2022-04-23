@@ -914,6 +914,7 @@ class Database(object):
 			frappe.call(method[0], *(method[1] or []), **(method[2] or {}))
 
 		self.sql("commit")
+		self.begin()
 
 		frappe.local.rollback_observers = []
 		self.flush_realtime_log()
