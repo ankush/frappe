@@ -42,11 +42,14 @@ def get_context(context):
 	boot_json = CLOSING_SCRIPT_TAG_PATTERN.sub("", boot_json)
 	boot_json = json.dumps(boot_json)
 
+	include_js = hooks["app_include_js"]
+	include_sentry(include_js)
+
 	context.update(
 		{
 			"no_cache": 1,
 			"build_version": frappe.utils.get_build_version(),
-			"include_js": hooks["app_include_js"],
+			"include_js": include_js,
 			"include_css": hooks["app_include_css"],
 			"layout_direction": "rtl" if is_rtl() else "ltr",
 			"lang": frappe.local.lang,
@@ -61,6 +64,11 @@ def get_context(context):
 	)
 
 	return context
+
+
+def include_sentry(include_js: list[str]) -> None:
+	if frappe.conf.sentry_dsn and frappe.get_system_settings("automatically_report_errors"):
+		include_js.insert(0, "sentry.bundle.js")
 
 
 @frappe.whitelist()
