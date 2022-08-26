@@ -106,15 +106,12 @@ function log(...args) {
 	console.log(...args); // eslint-disable-line no-console
 }
 
-function get_redis_subscriber(kind) {
-	// get redis subscriber that aborts after 10 connection attempts
-	let retry_strategy;
+function get_redis_subscriber(kind, options = {}) {
 	let { get_redis_subscriber: get_redis, get_conf } = require("../node_utils");
 
-	if (process.env.CI == 1 || get_conf().developer_mode == 1) {
-		retry_strategy = () => {};
-	} else {
-		retry_strategy = function (options) {
+	// get redis subscriber that aborts after 10 connection attempts
+	if (!options.retry_strategy) {
+		options.retry_strategy = function (options) {
 			// abort after 10 connection attempts
 			if (options.attempt > 10) {
 				return undefined;
@@ -122,7 +119,7 @@ function get_redis_subscriber(kind) {
 			return Math.min(options.attempt * 100, 2000);
 		};
 	}
-	return get_redis(kind, { retry_strategy });
+	return get_redis(kind, options);
 }
 
 module.exports = {

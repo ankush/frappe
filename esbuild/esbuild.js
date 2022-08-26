@@ -404,7 +404,8 @@ async function write_assets_json(metafile) {
 function update_assets_json_in_cache() {
 	// update assets_json cache in redis, so that it can be read directly by python
 	return new Promise((resolve) => {
-		let client = get_redis_subscriber("redis_cache");
+		// Retry disabled intentionally, A cache miss on this causes 1 filesystem read on first request.
+		let client = get_redis_subscriber("redis_cache", { retry_strategy: () => {} });
 		// handle error event to avoid printing stack traces
 		client.on("error", (_) => {
 			log_warn("Cannot connect to redis_cache to update assets_json");
