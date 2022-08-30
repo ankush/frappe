@@ -19,10 +19,13 @@ class FrappeTestCase(unittest.TestCase):
 	otherwise this class will become ineffective.
 	"""
 
+	TEST_SITE = "test_site"
+
 	SHOW_TRANSACTION_COMMIT_WARNINGS = False
 
 	@classmethod
 	def setUpClass(cls) -> None:
+		cls.TEST_SITE = getattr(frappe.local, "site", None) or cls.TEST_SITE
 		# flush changes done so far to avoid flake
 		frappe.db.commit()
 		frappe.db.begin()

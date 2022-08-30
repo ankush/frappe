@@ -103,6 +103,7 @@ class Database:
 
 		self.password = password or frappe.conf.db_password
 		self.value_cache = {}
+		self.sql_query_count = 0
 		# self.db_type: str
 		# self.last_query (lazy) attribute of last sql query executed
 
@@ -205,6 +206,7 @@ class Database:
 			values = (values,)
 		query, values = self._transform_query(query, values)
 
+		self.sql_query_count += 1
 		try:
 			self._cursor.execute(query, values)
 		except Exception as e:
