@@ -108,6 +108,7 @@ def _restore_thread_locals(flags):
 	frappe.local.conf = frappe._dict(frappe.get_site_config())
 	frappe.local.cache = {}
 	frappe.local.lang = "en"
+	frappe.local.request = None
 	frappe.local.preload_assets = {"style": [], "script": []}
 
 
