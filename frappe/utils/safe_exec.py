@@ -1,3 +1,4 @@
+import ast
 import copy
 import inspect
 import json
@@ -7,7 +8,7 @@ from contextlib import contextmanager
 from functools import lru_cache
 
 import RestrictedPython.Guards
-from RestrictedPython import compile_restricted, safe_globals
+from RestrictedPython import RestrictingNodeTransformer, compile_restricted, safe_globals
 
 import frappe
 import frappe.exceptions
@@ -29,6 +30,16 @@ from frappe.www.printview import get_visible_columns
 
 class ServerScriptNotEnabled(frappe.PermissionError):
 	pass
+
+
+class FrappeSafeTransformer(RestrictingNodeTransformer):
+	def visit_Call(self, node):
+		if isinstance(node.func, ast.Attribute) and node.func.attr == "get":
+			key = node.args[0].value
+			if key.startswith("_"):
+				self.error(node, "can not access keys starting with _")
+
+		return super().visit_Call(node)
 
 
 class NamespaceDict(frappe._dict):
@@ -69,7 +80,11 @@ def safe_exec(script, _globals=None, _locals=None, restrict_commit_rollback=Fals
 
 	with safe_exec_flags(), patched_qb():
 		# execute script compiled by RestrictedPython
-		exec(compile_restricted(script), exec_globals, _locals)  # pylint: disable=exec-used
+		exec(
+			compile_restricted(script, filename="<server_script>", policy=FrappeSafeTransformer),
+			exec_globals,
+			_locals,
+		)  # pylint: disable=exec-used
 
 	return exec_globals, _locals
 

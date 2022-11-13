@@ -1,4 +1,5 @@
 import types
+from textwrap import dedent
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -75,3 +76,12 @@ class TestSafeExec(FrappeTestCase):
 	def test_unsafe_objects(self):
 		unsafe_global = {"frappe": frappe}
 		self.assertRaises(SyntaxError, safe_exec, """frappe.msgprint("Hello")""", unsafe_global)
+
+	def test_gettitem_methods(self):
+		code = dedent(
+			"""
+			a = {"__secret__": 42}
+			b = a.get("__secret__")
+		"""
+		)
+		self.assertRaises(SyntaxError, safe_exec, code)
