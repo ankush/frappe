@@ -434,8 +434,10 @@ def get_redis_conn(username=None, password=None):
 			"You can reset credentials using `bench create-rq-users` CLI and restart the server",
 			colour="red",
 		)
+		print(frappe.get_traceback(with_context=True))
 		raise
 	except Exception:
+		print(frappe.get_traceback(with_context=True))
 		log(f"Please make sure that Redis Queue runs @ {frappe.get_conf().redis_queue}", colour="red")
 		raise
 
