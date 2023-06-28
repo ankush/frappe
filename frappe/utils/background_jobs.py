@@ -15,7 +15,6 @@ from rq.job import Job, JobStatus
 from rq.logutils import setup_loghandlers
 from rq.worker import DequeueStrategy
 from rq.worker_pool import WorkerPool
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 import frappe
 import frappe.monitor
@@ -393,12 +392,6 @@ def validate_queue(queue, default_queue_list=None):
 		frappe.throw(_("Queue should be one of {0}").format(", ".join(default_queue_list)))
 
 
-@retry(
-	retry=retry_if_exception_type(BusyLoadingError) | retry_if_exception_type(ConnectionError),
-	stop=stop_after_attempt(10),
-	wait=wait_fixed(1),
-	reraise=True,
-)
 def get_redis_conn(username=None, password=None):
 	if not hasattr(frappe.local, "conf"):
 		raise Exception("You need to call frappe.init")
@@ -434,10 +427,14 @@ def get_redis_conn(username=None, password=None):
 			"You can reset credentials using `bench create-rq-users` CLI and restart the server",
 			colour="red",
 		)
-		print(frappe.get_traceback(with_context=True))
+		import traceback
+
+		traceback.print_stack()
 		raise
 	except Exception:
-		print(frappe.get_traceback(with_context=True))
+		import traceback
+
+		traceback.print_stack()
 		log(f"Please make sure that Redis Queue runs @ {frappe.get_conf().redis_queue}", colour="red")
 		raise
 
