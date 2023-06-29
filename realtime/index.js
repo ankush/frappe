@@ -40,7 +40,8 @@ subscriber.on("message", function (_channel, message) {
 	if (message.room) {
 		io.of(namespace).to(message.room).emit(message.event, message.message);
 	} else {
-		io.emit(message.event, message.message);
+		// publish to ALL sites only used for things like build event.
+		realtime.emit(message.event, message.message);
 	}
 });
 
