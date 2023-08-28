@@ -99,9 +99,7 @@ frappe.model.DocTypeController = class DocTypeController extends frappe.ui.form.
 			'By "Naming Series" field':
 				"Format: <code>naming_series:[fieldname]</code>. Default fieldname is <code>naming_series</code>",
 			Expression:
-				"Format: <code>format:EXAMPLE-{MM}morewords{fieldname1}-{fieldname2}-{#####}</code> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.",
-			"Expression (old style)":
-				"Format: <code>EXAMPLE-.#####</code> Series by prefix (separated by a dot)",
+				"Format: <code>EXAMPLE-{MM}morewords{fieldname1}-{fieldname2}-{#####}</code> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.",
 			Random: "",
 			"By script": "",
 		};
@@ -120,17 +118,21 @@ frappe.model.DocTypeController = class DocTypeController extends frappe.ui.form.
 			this.frm.__from_autoname = true;
 			const autoname = this.frm.doc.autoname.toLowerCase();
 
-			if (autoname === "prompt") this.frm.set_value("naming_rule", "Set by user");
-			else if (autoname === "autoincrement")
+			if (autoname === "prompt") {
+				this.frm.set_value("naming_rule", "Set by user");
+			} else if (autoname === "autoincrement") {
 				this.frm.set_value("naming_rule", "Autoincrement");
-			else if (autoname.startsWith("field:"))
+			} else if (autoname.startsWith("field:")) {
 				this.frm.set_value("naming_rule", "By fieldname");
-			else if (autoname.startsWith("naming_series:"))
+			} else if (autoname.startsWith("naming_series:")) {
 				this.frm.set_value("naming_rule", 'By "Naming Series" field');
-			else if (autoname.startsWith("format:"))
+			} else if (autoname.startsWith("format:")) {
 				this.frm.set_value("naming_rule", "Expression");
-			else if (autoname === "hash") this.frm.set_value("naming_rule", "Random");
-			else this.frm.set_value("naming_rule", "Expression (old style)");
+			} else if (autoname === "hash") {
+				this.frm.set_value("naming_rule", "Random");
+			} else {
+				this.frm.set_value("naming_rule", "Expression");
+			}
 
 			setTimeout(() => (this.frm.__from_autoname = false), 500);
 		}

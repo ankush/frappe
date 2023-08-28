@@ -146,7 +146,6 @@ class DocType(Document):
 			"By fieldname",
 			'By "Naming Series" field',
 			"Expression",
-			"Expression (old style)",
 			"Random",
 			"By script",
 		]
@@ -207,6 +206,7 @@ class DocType(Document):
 		self.make_repeatable()
 		self.validate_nestedset()
 		self.validate_child_table()
+		self.validate_naming_method()
 		self.validate_website()
 		self.validate_virtual_doctype_methods()
 		self.ensure_minimum_max_attachment_limit()
@@ -800,6 +800,10 @@ class DocType(Document):
 		if "field_order" in docdict:
 			del docdict["field_order"]
 
+		# Backward compatibility.
+		if docdict.get("naming_rule") == "Expression (old style)":
+			docdict["naming_rule"] = "Expression"
+
 	def export_doc(self):
 		"""Export to standard folder `[module]/doctype/[name]/[name].json`."""
 		from frappe.modules.export_file import export_to_files
@@ -948,6 +952,11 @@ class DocType(Document):
 			return
 
 		self.add_child_table_fields()
+
+	def validate_naming_method(self):
+		# Backward compatibility.
+		if self.naming_rule == "Expression (old style)":
+			self.naming_rule = "Expression"
 
 	def add_child_table_fields(self):
 		from frappe.database.schema import add_column

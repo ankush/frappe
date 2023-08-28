@@ -1,6 +1,5 @@
 {
  "actions": [],
- "autoname": "DL.####",
  "creation": "2013-01-29 17:55:08",
  "doctype": "DocType",
  "document_type": "Document",
@@ -67,7 +66,7 @@
    "fieldtype": "Select",
    "label": "Naming Rule",
    "length": 40,
-   "options": "\nSet by user\nBy fieldname\nBy \"Naming Series\" field\nExpression\nExpression (old style)\nRandom\nBy script"
+   "options": "\nSet by user\nBy fieldname\nBy \"Naming Series\" field\nExpression\nRandom\nBy script"
   },
   {
    "fieldname": "doc_type",
@@ -392,11 +391,10 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-07-16 13:25:46.201184",
+ "modified": "2023-08-28 19:10:54.994052",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",
- "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

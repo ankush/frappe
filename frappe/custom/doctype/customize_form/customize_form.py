@@ -63,7 +63,6 @@ class CustomizeForm(Document):
 			"By fieldname",
 			'By "Naming Series" field',
 			"Expression",
-			"Expression (old style)",
 			"Random",
 			"By script",
 		]

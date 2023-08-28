@@ -569,7 +569,7 @@
    "fieldtype": "Select",
    "label": "Naming Rule",
    "length": 40,
-   "options": "\nSet by user\nAutoincrement\nBy fieldname\nBy \"Naming Series\" field\nExpression\nExpression (old style)\nRandom\nBy script"
+   "options": "\nSet by user\nAutoincrement\nBy fieldname\nBy \"Naming Series\" field\nExpression\nRandom\nBy script"
   },
   {
    "fieldname": "migration_hash",
@@ -742,7 +742,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2023-08-23 15:09:08.789467",
+ "modified": "2023-08-28 18:59:24.137448",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",
