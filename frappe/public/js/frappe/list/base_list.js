@@ -447,7 +447,7 @@ frappe.views.BaseList = class BaseList {
 		return {
 			doctype: this.doctype,
 			fields: this.get_fields(),
-			filters: this.get_filters_for_args(),
+			filters: null,
 			order_by: this.sort_selector && this.sort_selector.get_sql_string(),
 			start: this.start,
 			page_length: this.page_length,

@@ -67,6 +67,7 @@ def execute(doctype, *args, **kwargs):
 def get_form_params():
 	"""parse GET request parameters."""
 	data = frappe._dict(frappe.local.form_dict)
+	print(data.filters, type(data.filters))
 	clean_params(data)
 	validate_args(data)
 	return data
