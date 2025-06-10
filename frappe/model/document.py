@@ -2008,9 +2008,11 @@ class LazyChildTable:
 
 	def __get__(self, doc: Document, objtype=None):
 		# Note: avoid any high level access here, can cause recursion
-		children = doc._load_child_table_from_db(self.fieldname, self.doctype) or []
-		assert self.fieldname not in doc.__dict__, "Descriptor should not override existing values"
-		doc.__dict__[self.fieldname] = []
+		fieldname = self.fieldname
+		__dict = doc.__dict__
+		assert fieldname not in __dict, "Descriptor should not override existing values"
+		children = doc._load_child_table_from_db(fieldname, self.doctype) or []
+		__dict[fieldname] = []
 		# Update __dict__ and convert to Document objects
-		doc.extend(self.fieldname, children)
-		return doc.__dict__[self.fieldname]
+		doc.extend(fieldname, children)
+		return __dict[fieldname]
