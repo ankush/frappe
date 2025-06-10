@@ -277,7 +277,7 @@ class Session:
 			self.insert_session_record()
 
 			# update user
-			user = frappe.get_doc("User", self.data["user"])
+			user = frappe.get_lazy_doc("User", self.data["user"])
 			user_doctype = frappe.qb.DocType("User")
 			(
 				frappe.qb.update(user_doctype)

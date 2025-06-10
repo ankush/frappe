@@ -132,7 +132,7 @@ def get_desktop_icons(user=None):
 
 				user_icons.append(standard_icon)
 
-		user_blocked_modules = frappe.get_doc("User", user).get_blocked_modules()
+		user_blocked_modules = frappe.get_lazy_doc("User", user).get_blocked_modules()
 		for icon in user_icons:
 			if icon.module_name in user_blocked_modules:
 				icon.hidden = 1

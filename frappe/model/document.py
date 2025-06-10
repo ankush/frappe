@@ -139,7 +139,7 @@ def get_doc_from_dict(data: dict[str, Any], **kwargs) -> "Document":
 	raise ImportError(data["doctype"])
 
 
-def get_lazy_doc(doctype: str, name: str):
+def get_lazy_doc(doctype: str, name: str) -> "Document":
 	assert doctype != "DocType", "DocType can not be lazy loaded"
 
 	controller = get_lazy_controller(doctype)
@@ -1944,7 +1944,7 @@ def _document_values_generator(
 
 @frappe.whitelist()
 def unlock_document(doctype: str, name: str):
-	frappe.get_doc(doctype, name).unlock()
+	frappe.get_lazy_doc(doctype, name).unlock()
 	frappe.msgprint(frappe._("Document Unlocked"), alert=True)
 
 
