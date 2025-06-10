@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 from contextlib import contextmanager
+from copy import deepcopy
 from datetime import timedelta
 from unittest.mock import Mock, patch
 
@@ -9,6 +10,7 @@ from frappe.app import make_form_dict
 from frappe.core.doctype.doctype.test_doctype import new_doctype
 from frappe.core.doctype.user.user import User
 from frappe.desk.doctype.note.note import Note
+from frappe.model.document import LazyChildTable
 from frappe.model.naming import make_autoname, parse_naming_series, revert_series_if_last
 from frappe.tests import IntegrationTestCase
 from frappe.utils import cint, now_datetime, set_request
@@ -571,6 +573,29 @@ class TestDocument(IntegrationTestCase):
 		# Save should works, it won't be efficient because internal code will just trigger fetching
 		# of child tables to resave them.
 		guest.save()
+
+	def test_lazy_magic(self):
+		self.assertIsNone(getattr(LazyChildTable, "__set__", None))
+
+		guest = frappe.get_lazy_doc("User", "Guest")
+		# table fields will be populated on first access
+		self.assertIsNone(guest.__dict__.get("roles"))
+		roles = guest.roles
+		self.assertIs(guest.__dict__.get("roles"), roles)
+
+		# Allow overriding from user code
+		roles_copy = deepcopy(roles)
+		guest.roles = roles_copy
+		self.assertIs(guest.__dict__.get("roles"), roles_copy)
+
+		with patch(f"{LazyChildTable.__module__}.{LazyChildTable.__name__}.__get__") as getter:
+			_ = guest.roles
+			self.assertFalse(getter.called)
+
+		guest = frappe.get_lazy_doc("User", "Guest")
+		with patch(f"{LazyChildTable.__module__}.{LazyChildTable.__name__}.__get__") as getter:
+			_ = guest.roles
+			self.assertTrue(getter.called)
 
 
 class TestDocumentWebView(IntegrationTestCase):
