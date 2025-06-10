@@ -556,6 +556,18 @@ class TestDocument(IntegrationTestCase):
 		# things accessing __dict__ by default should be updated too
 		self.assertTrue(frappe.get_lazy_doc("User", "Guest").get("roles"))
 
+		# Only touched tables and self should be updated
+		guest = frappe.get_lazy_doc("User", "Guest")
+		with self.assertQueryCount(1):
+			guest.db_update_all()
+
+		guest = frappe.get_lazy_doc("User", "Guest")
+		_ = guest.roles
+		with self.assertQueryCount(1 + len(guest.roles)):
+			guest.db_update_all()
+
+		# Save should works, it won't be efficient because internal code will just trigger fetching
+		# of child tables to resave them.
 		guest.save()
 
 

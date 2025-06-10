@@ -1944,8 +1944,6 @@ def unlock_document(doctype: str, name: str):
 
 
 def get_lazy_controller(doctype):
-	from frappe.model.document import LazyDocument
-
 	lazy_controllers = frappe.controllers.setdefault(f"lazy|{frappe.local.site}", {})
 	if doctype not in lazy_controllers:
 		original_controller = get_controller(doctype)
@@ -1967,6 +1965,7 @@ class LazyDocument:
 		"""Override Document which eagerly loads child tables"""
 		# This is a map of loaded children, it should get erased whenever load_children_from_db is
 		# called to allow reloading lazily again.
+		self.flags.lazy_loaded = True
 		for fieldname in self._table_fieldnames:
 			self.__dict__.pop(fieldname, None)
 
@@ -1974,6 +1973,16 @@ class LazyDocument:
 	def get(self: Document, key, *args, **kwags):
 		_ = getattr(self, key, None)
 		return super().get(key, *args, **kwags)
+
+	@override
+	def db_update_all(self):
+		self.db_update()
+		for fieldname in self._table_fieldnames:
+			if fieldname not in self.__dict__:
+				# Not fetched, can't possibly change so no need to update
+				continue
+			for doc in self.get(fieldname):
+				doc.db_update()
 
 
 class LazyChildTable:
