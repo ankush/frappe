@@ -1963,9 +1963,21 @@ def get_lazy_controller(doctype):
 
 		# Dynamically construct a class that subclasses LazyDocument and original controller.
 		lazy_controller = type(f"Lazy{original_controller.__name__}", (LazyDocument, original_controller), {})
-		for fieldname, child_doctype in meta._table_doctypes.items():
+		table_doctypes = meta._table_doctypes
+		for fieldname, child_doctype in table_doctypes.items():
 			setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
 
+		# dynamically create the get method to avoid attribute lookup
+		def get(self, key, filters=None, limit=None, default=None):
+			if isinstance(key, str) and key in table_doctypes:
+				value = getattr(self, key)
+				if not filters:
+					# default will never hit, as getattr will always set something in __dict__
+					return value
+
+			return super(lazy_controller, self).get(key, filters, limit, default)
+
+		lazy_controller.get = get
 		lazy_controllers[doctype] = lazy_controller
 	return lazy_controllers[doctype]
 
@@ -1980,14 +1992,6 @@ class LazyDocument:
 		# called to allow reloading lazily again.
 		for fieldname in self._table_fieldnames:
 			self.__dict__.pop(fieldname, None)
-
-	@override
-	def get(self: Document, key, *args, **kwags):
-		if isinstance(key, str):
-			# Trigger populating of __dict__
-			_ = getattr(self, key, None)
-		parent = cast(Document, super())
-		return parent.get(key, *args, **kwags)
 
 	@override
 	def db_update_all(self):
