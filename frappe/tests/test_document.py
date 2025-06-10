@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.app import make_form_dict
 from frappe.core.doctype.doctype.test_doctype import new_doctype
+from frappe.core.doctype.user.user import User
 from frappe.desk.doctype.note.note import Note
 from frappe.model.naming import make_autoname, parse_naming_series, revert_series_if_last
 from frappe.tests import IntegrationTestCase
@@ -523,6 +524,33 @@ class TestDocument(IntegrationTestCase):
 		c.db_set(key, val)
 		changed_val = frappe.db.get_single_value(c.doctype, key)
 		self.assertEqual(val, changed_val)
+
+	def test_lazy_documents(self):
+		# Warmup meta etc
+		_ = frappe.get_lazy_doc("User", "Guest")
+		eager_guest: User = frappe.get_doc("User", "Guest")
+
+		# Only one query for parent document
+		with self.assertQueryCount(1):
+			guest: User = frappe.get_lazy_doc("User", "Guest")
+			self.assertEqual(guest.user_type, "Website User")
+
+		# Only one query for one table access
+		with self.assertQueryCount(1):
+			guest_role = guest.roles[0]
+			self.assertEqual(guest_role.role, "Guest")
+			self.assertIsInstance(guest_role, type(eager_guest.roles[0]))
+
+		# No queries for repeat access, same object
+		with self.assertQueryCount(0):
+			guest_role_repeat_access = guest.roles[0]
+		self.assertIs(guest_role, guest_role_repeat_access)
+
+		with self.assertQueryCount(0):
+			self.assertIs(guest.roles, guest.get("roles"))
+
+		# things accessing __dict__ by default should be updated too
+		self.assertTrue(frappe.get_lazy_doc("User", "Guest").get("roles"))
 
 
 class TestDocumentWebView(IntegrationTestCase):

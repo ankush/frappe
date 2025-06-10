@@ -1993,7 +1993,7 @@ import frappe._optimizations
 from frappe.cache_manager import clear_cache, reset_metadata_version
 from frappe.config import get_common_site_config, get_conf, get_site_config
 from frappe.core.doctype.system_settings.system_settings import get_system_settings
-from frappe.model.document import get_doc
+from frappe.model.document import get_doc, get_lazy_doc
 from frappe.model.meta import get_meta
 from frappe.realtime import publish_progress, publish_realtime
 from frappe.utils import get_traceback, mock, parse_json, safe_eval

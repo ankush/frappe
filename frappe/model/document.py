@@ -10,6 +10,7 @@ from functools import wraps
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, overload
 
+from typing_extensions import Self, override
 from werkzeug.exceptions import NotFound
 
 import frappe
@@ -136,6 +137,13 @@ def get_doc_from_dict(data: dict[str, Any], **kwargs) -> "Document":
 	if controller:
 		return controller(**data)
 	raise ImportError(data["doctype"])
+
+
+def get_lazy_doc(doctype: str, name: str):
+	controller = get_lazy_controller(doctype)
+	if controller:
+		return controller(doctype, name)
+	raise ImportError(doctype)
 
 
 class Document(BaseDocument):
@@ -1933,3 +1941,62 @@ def _document_values_generator(
 def unlock_document(doctype: str, name: str):
 	frappe.get_doc(doctype, name).unlock()
 	frappe.msgprint(frappe._("Document Unlocked"), alert=True)
+
+
+def get_lazy_controller(doctype):
+	from frappe.model.document import LazyDocument
+
+	lazy_controllers = frappe.controllers.setdefault(f"lazy|{frappe.local.site}", {})
+	if doctype not in lazy_controllers:
+		original_controller = get_controller(doctype)
+
+		lazy_controller = type(f"Lazy{original_controller.__name__}", (LazyDocument, original_controller), {})
+		meta = frappe.get_meta(doctype)
+		for fieldname, child_doctype in meta._table_doctypes.items():
+			setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
+
+		lazy_controllers[doctype] = lazy_controller
+	return lazy_controllers[doctype]
+
+
+class LazyDocument:
+	"""Mixin for Document class that implments lazy loading for child tables."""
+
+	@override
+	def load_children_from_db(self: Document):
+		"""Override Document which eagerly loads child tables"""
+		# This is a map of loaded children, it should get erased whenever load_children_from_db is
+		# called to allow reloading lazily again.
+		for fieldname in self._table_fieldnames:
+			self.__dict__.pop(fieldname, None)
+
+	@override
+	def get(self: Document, key, *args, **kwags):
+		_ = getattr(self, key, None)
+		return super().get(key, *args, **kwags)
+
+
+class LazyChildTable:
+	__slots__ = ("doctype", "fieldname")
+
+	def __init__(self, fieldname: str, doctype: str) -> None:
+		self.fieldname = fieldname
+		self.doctype = doctype
+
+	def __get__(self, doc, objtype=None):
+		# TODO: review cached_property magic
+		children = frappe.db.sql(
+			"""SELECT * FROM {table_name}
+			WHERE `parent`= %(parent)s
+				AND `parenttype`= %(parenttype)s
+				AND `parentfield`= %(parentfield)s
+			ORDER BY `idx` ASC""".format(
+				table_name=get_table_name(self.doctype, wrap_in_backticks=True),
+			),
+			{"parent": str(doc.name), "parenttype": doc.doctype, "parentfield": self.fieldname},
+			as_dict=True,
+		)
+
+		# Update __dict__ and convert to Document objects
+		doc.extend(self.fieldname, children or [])
+		return doc.__dict__[self.fieldname]  # Note: avoid any high level access here
