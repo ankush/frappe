@@ -4,6 +4,7 @@ import hashlib
 import itertools
 import json
 import time
+import warnings
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import wraps
@@ -140,7 +141,9 @@ def get_doc_from_dict(data: dict[str, Any], **kwargs) -> "Document":
 
 
 def get_lazy_doc(doctype: str, name: str) -> "Document":
-	assert doctype != "DocType", "DocType can not be lazy loaded"
+	if doctype == "DocType":
+		warnings.warn("DocType doesn't support lazy loading", stacklevel=1)
+		return get_doc(doctype, name)
 
 	controller = get_lazy_controller(doctype)
 	if controller:
@@ -1951,15 +1954,22 @@ def unlock_document(doctype: str, name: str):
 def get_lazy_controller(doctype):
 	lazy_controllers = frappe.lazy_controllers.setdefault(frappe.local.site, {})
 	if doctype not in lazy_controllers:
-		original_controller = get_controller(doctype)
-
-		lazy_controller = type(f"Lazy{original_controller.__name__}", (LazyDocument, original_controller), {})
 		meta = frappe.get_meta(doctype)
-		assert not meta.is_virtual, "Virtual DocTypes can not be lazy loaded"
-		for fieldname, child_doctype in meta._table_doctypes.items():
-			setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
+		original_controller = get_controller(doctype)
+		if meta.is_virtual:  # not supported
+			lazy_controllers[doctype] = original_controller
+			warnings.warn("Virtual doctypes don't support lazy loading", stacklevel=2)
+		else:
+			# Dynamically construct a class that subclasses LazyDocument and original controller.
+			lazy_controller = type(
+				f"Lazy{original_controller.__name__}",
+				(LazyDocument, original_controller),
+				{},
+			)
+			for fieldname, child_doctype in meta._table_doctypes.items():
+				setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
 
-		lazy_controllers[doctype] = lazy_controller
+			lazy_controllers[doctype] = lazy_controller
 	return lazy_controllers[doctype]
 
 
@@ -1971,7 +1981,6 @@ class LazyDocument:
 		"""Override Document which eagerly loads child tables"""
 		# This is a map of loaded children, it should get erased whenever load_children_from_db is
 		# called to allow reloading lazily again.
-		self.flags.lazy_loaded = True
 		for fieldname in self._table_fieldnames:
 			self.__dict__.pop(fieldname, None)
 

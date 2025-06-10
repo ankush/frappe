@@ -129,10 +129,8 @@ def has_permission(
 
 	if doc:
 		if isinstance(doc, str | int):
-			if meta.is_virtual or doctype == "DocType":
-				doc = frappe.get_doc(meta.name, doc)
-			else:  # perf: Avoid loading child tables for perm checks
-				doc = frappe.get_lazy_doc(meta.name, doc)
+			# perf: Avoid loading child tables for perm checks
+			doc = frappe.get_lazy_doc(meta.name, doc)
 		perm = get_doc_permissions(doc, user=user, ptype=ptype, debug=debug).get(ptype)
 		if not perm:
 			debug and _debug_log(
