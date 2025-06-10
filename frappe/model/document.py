@@ -1959,17 +1959,14 @@ def get_lazy_controller(doctype):
 		if meta.is_virtual:  # not supported
 			lazy_controllers[doctype] = original_controller
 			warnings.warn("Virtual doctypes don't support lazy loading", stacklevel=2)
-		else:
-			# Dynamically construct a class that subclasses LazyDocument and original controller.
-			lazy_controller = type(
-				f"Lazy{original_controller.__name__}",
-				(LazyDocument, original_controller),
-				{},
-			)
-			for fieldname, child_doctype in meta._table_doctypes.items():
-				setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
+			return original_controller
 
-			lazy_controllers[doctype] = lazy_controller
+		# Dynamically construct a class that subclasses LazyDocument and original controller.
+		lazy_controller = type(f"Lazy{original_controller.__name__}", (LazyDocument, original_controller), {})
+		for fieldname, child_doctype in meta._table_doctypes.items():
+			setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
+
+		lazy_controllers[doctype] = lazy_controller
 	return lazy_controllers[doctype]
 
 
@@ -1986,7 +1983,9 @@ class LazyDocument:
 
 	@override
 	def get(self: Document, key, *args, **kwags):
-		_ = getattr(self, key, None)
+		if isinstance(key, str):
+			# Trigger populating of __dict__
+			_ = getattr(self, key, None)
 		return super().get(key, *args, **kwags)
 
 	@override
