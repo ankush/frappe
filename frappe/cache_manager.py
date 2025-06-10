@@ -175,10 +175,14 @@ def _clear_doctype_cache_from_redis(doctype: str | None = None):
 def clear_controller_cache(doctype=None):
 	if not doctype:
 		frappe.controllers.pop(frappe.local.site, None)
+		frappe.lazy_controllers.pop(frappe.local.site, None)
 		return
 
 	if site_controllers := frappe.controllers.get(frappe.local.site):
 		site_controllers.pop(doctype, None)
+
+	if lazy_site_controllers := frappe.lazy_controllers.get(frappe.local.site):
+		lazy_site_controllers.pop(doctype, None)
 
 
 def get_doctype_map(doctype, name, filters=None, order_by=None):

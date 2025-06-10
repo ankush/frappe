@@ -76,7 +76,8 @@ if TYPE_CHECKING:  # pragma: no cover
 	from frappe.types.lazytranslatedstring import _LazyTranslate
 	from frappe.utils.redis_wrapper import ClientCache, RedisWrapper
 
-controllers: dict[str, "Document"] = {}
+controllers: dict[str, type] = {}
+lazy_controllers: dict[str, type] = {}
 local = Local()
 cache: Optional["RedisWrapper"] = None
 client_cache: Optional["ClientCache"] = None

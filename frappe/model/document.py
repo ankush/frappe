@@ -295,22 +295,7 @@ class Document(BaseDocument):
 					for_update=self.flags.for_update,
 				)
 			else:
-				for_update = ""
-				if self.flags.for_update and frappe.db.db_type != "sqlite":
-					for_update = "FOR UPDATE"
-				# Fast pass for all other doctypes - using raw SQL
-				children = frappe.db.sql(
-					"""SELECT * FROM {table_name}
-					WHERE `parent`= %(parent)s
-						AND `parenttype`= %(parenttype)s
-						AND `parentfield`= %(parentfield)s
-					ORDER BY `idx` ASC {for_update}""".format(
-						table_name=get_table_name(child_doctype, wrap_in_backticks=True),
-						for_update=for_update,
-					),
-					{"parent": str(self.name), "parenttype": self.doctype, "parentfield": fieldname},
-					as_dict=True,
-				)
+				children = self._load_child_table_from_db(fieldname, child_doctype)
 
 			if children is None:
 				children = []
@@ -318,6 +303,24 @@ class Document(BaseDocument):
 			self.set(fieldname, children)
 
 		return self
+
+	def _load_child_table_from_db(self, fieldname, child_doctype):
+		for_update = ""
+		if self.flags.for_update and frappe.db.db_type != "sqlite":
+			for_update = "FOR UPDATE"
+		# Fast pass for all other doctypes - using raw SQL
+		return frappe.db.sql(
+			"""SELECT * FROM {table_name}
+			WHERE `parent`= %(parent)s
+				AND `parenttype`= %(parenttype)s
+				AND `parentfield`= %(parentfield)s
+			ORDER BY `idx` ASC {for_update}""".format(
+				table_name=get_table_name(child_doctype, wrap_in_backticks=True),
+				for_update=for_update,
+			),
+			{"parent": str(self.name), "parenttype": self.doctype, "parentfield": fieldname},
+			as_dict=True,
+		)
 
 	def reload(self) -> "Self":
 		"""Reload document from database"""
@@ -1946,7 +1949,7 @@ def unlock_document(doctype: str, name: str):
 
 
 def get_lazy_controller(doctype):
-	lazy_controllers = frappe.controllers.setdefault(f"lazy|{frappe.local.site}", {})
+	lazy_controllers = frappe.lazy_controllers.setdefault(frappe.local.site, {})
 	if doctype not in lazy_controllers:
 		original_controller = get_controller(doctype)
 
@@ -1996,20 +1999,10 @@ class LazyChildTable:
 		self.doctype = doctype
 
 	def __get__(self, doc: Document, objtype=None):
-		# TODO: review cached_property magic
-		children = frappe.db.sql(
-			"""SELECT * FROM {table_name}
-			WHERE `parent`= %(parent)s
-				AND `parenttype`= %(parenttype)s
-				AND `parentfield`= %(parentfield)s
-			ORDER BY `idx` ASC""".format(
-				table_name=get_table_name(self.doctype, wrap_in_backticks=True),
-			),
-			{"parent": str(doc.name), "parenttype": doc.doctype, "parentfield": self.fieldname},
-			as_dict=True,
-		)
-
-		# Update __dict__ and convert to Document objects
+		# Note: avoid any high level access here, can cause recursion
+		children = doc._load_child_table_from_db(self.fieldname, self.doctype) or []
+		assert self.fieldname not in doc.__dict__, "Descriptor should not override existing values"
 		doc.__dict__[self.fieldname] = []
-		doc.extend(self.fieldname, children or [])
-		return doc.__dict__[self.fieldname]  # Note: avoid any high level access here
+		# Update __dict__ and convert to Document objects
+		doc.extend(self.fieldname, children)
+		return doc.__dict__[self.fieldname]

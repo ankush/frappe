@@ -550,12 +550,14 @@ class TestDocument(IntegrationTestCase):
 			guest_role_repeat_access = guest.roles[0]
 		self.assertIs(guest_role, guest_role_repeat_access)
 
+		# Same object after first access
 		with self.assertQueryCount(0):
 			self.assertIs(guest.roles, guest.get("roles"))
 
 		# things accessing __dict__ by default should be updated too
 		self.assertTrue(frappe.get_lazy_doc("User", "Guest").get("roles"))
 
+	def test_lazy_doc_efficient_saves(self):
 		# Only touched tables and self should be updated
 		guest = frappe.get_lazy_doc("User", "Guest")
 		with self.assertQueryCount(1):
