@@ -1983,7 +1983,7 @@ class LazyChildTable:
 		self.fieldname = fieldname
 		self.doctype = doctype
 
-	def __get__(self, doc, objtype=None):
+	def __get__(self, doc: Document, objtype=None):
 		# TODO: review cached_property magic
 		children = frappe.db.sql(
 			"""SELECT * FROM {table_name}
@@ -1998,5 +1998,6 @@ class LazyChildTable:
 		)
 
 		# Update __dict__ and convert to Document objects
+		doc.__dict__[self.fieldname] = []
 		doc.extend(self.fieldname, children or [])
 		return doc.__dict__[self.fieldname]  # Note: avoid any high level access here

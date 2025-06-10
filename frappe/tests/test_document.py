@@ -541,6 +541,10 @@ class TestDocument(IntegrationTestCase):
 			self.assertEqual(guest_role.role, "Guest")
 			self.assertIsInstance(guest_role, type(eager_guest.roles[0]))
 
+		# Only one query for one table access
+		with self.assertQueryCount(1):
+			_ = guest.role_profiles
+
 		# No queries for repeat access, same object
 		with self.assertQueryCount(0):
 			guest_role_repeat_access = guest.roles[0]
@@ -551,6 +555,8 @@ class TestDocument(IntegrationTestCase):
 
 		# things accessing __dict__ by default should be updated too
 		self.assertTrue(frappe.get_lazy_doc("User", "Guest").get("roles"))
+
+		guest.save()
 
 
 class TestDocumentWebView(IntegrationTestCase):
