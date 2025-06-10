@@ -140,6 +140,8 @@ def get_doc_from_dict(data: dict[str, Any], **kwargs) -> "Document":
 
 
 def get_lazy_doc(doctype: str, name: str):
+	assert doctype != "DocType", "DocType can not be lazy loaded"
+
 	controller = get_lazy_controller(doctype)
 	if controller:
 		return controller(doctype, name)
@@ -1950,6 +1952,7 @@ def get_lazy_controller(doctype):
 
 		lazy_controller = type(f"Lazy{original_controller.__name__}", (LazyDocument, original_controller), {})
 		meta = frappe.get_meta(doctype)
+		assert not meta.is_virtual, "Virtual DocTypes can not be lazy loaded"
 		for fieldname, child_doctype in meta._table_doctypes.items():
 			setattr(lazy_controller, fieldname, LazyChildTable(fieldname, child_doctype))
 
