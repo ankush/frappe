@@ -22,7 +22,7 @@ frappe.ui.form.on("Number Card", {
 		}
 
 		if (frm.doc.type == "Custom") {
-			frm.filters = eval(frm.doc.filters_config);
+			frm.filters = frm.events.eval_filters_config(frm);
 			frm.trigger("render_filters_table");
 		}
 		frm.trigger("set_parent_document_type");
@@ -90,10 +90,23 @@ frappe.ui.form.on("Number Card", {
 	},
 
 	filters_config: function (frm) {
-		frm.filters = eval(frm.doc.filters_config);
+		frm.filters = frm.events.eval_filters_config(frm);
 		const filter_values = frappe.report_utils.get_filter_values(frm.filters);
 		frm.set_value("filters_json", JSON.stringify(filter_values));
 		frm.trigger("render_filters_table");
+	},
+
+	eval_filters_config: function (frm) {
+		// `filters_config` is a Code field holding a JavaScript array expression
+		// (it may reference helpers like __() or frappe.defaults.get_user_default()).
+		// Evaluating stored user content is a code-execution sink, so only do it in
+		// developer_mode where the content is authored by a trusted developer. On
+		// production sites the stored value is never executed, which prevents an
+		// attacker-created card from running arbitrary JS in a victim's session.
+		if (!frm.doc.filters_config || !frappe.boot.developer_mode) {
+			return [];
+		}
+		return eval(frm.doc.filters_config) || [];
 	},
 
 	document_type: function (frm) {
